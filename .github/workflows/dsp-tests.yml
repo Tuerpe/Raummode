@@ -18,7 +18,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install numpy scipy pytest
+      - run: pip install numpy scipy matplotlib pytest
       - run: python pc/gen_signals.py
       - run: python pc/tests/make_fixtures.py
       - run: python -m pytest pc/tests -q
@@ -26,11 +26,9 @@ jobs:
   swift:
     name: Swift-Paket (Ubuntu)
     runs-on: ubuntu-latest
+    container: swift:5.10     # offizielles Image, identisch zum lokalen Docker-Test
     steps:
       - uses: actions/checkout@v4
-      - uses: swift-actions/setup-swift@v2
-        with:
-          swift-version: "5.10"
       - run: swift --version
       - name: Tests (Release, sonst dauern die FFTs zu lange)
         working-directory: app/RaummodeDSP
