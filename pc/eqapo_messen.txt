@@ -1,0 +1,5 @@
+# Equalizer APO - MESSKONFIGURATION (Projekt Raummode)
+# Waehrend der Messung muss die Kette flach sein: kein EQ, kein Preamp.
+# Diese Datei wird von eqapo_toggle.ps1 -Modus Messen nach
+# C:\Tools\EQ_APO\config\config.txt kopiert. Vorher wird die EQ-Konfig gesichert.
+Preamp: 0 dB

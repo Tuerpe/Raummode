@@ -1,0 +1,12 @@
+# Zielkurve "harman" (angenaehert an die Harman-Raumkurve fuer Lautsprecher im Raum):
+# Bass-Shelf +4 dB unter 100 Hz, dann Neigung bis -6 dB bei 20 kHz.
+# Hz  dB
+20     4
+80     4
+120    3
+200    1.5
+400    0.5
+1000   0
+3000   -1
+10000  -4
+20000  -6

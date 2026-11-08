@@ -1,0 +1,6 @@
+# Zielkurve "raumkurve": flach bis 200 Hz, dann -1 dB/Oktave bis 20 kHz.
+# Am Hoerplatz im Raum klingt "flach gemessen" zu hell; eine leichte Neigung ist ueblich.
+# Hz  dB
+20     0
+200    0
+20000  -6.64

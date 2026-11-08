@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# erzeugte Signale (python pc/gen_signals.py), gross
+pc/signals/*.wav
+
+# Analyse-Ausgaben entstehen pro Messordner
+messungen/**/analyse/
+
+# Xcode / SwiftPM (auf dem Runner erzeugt)
+app/Raummode.xcodeproj/
+app/build/
+app/Payload/
+app/*.ipa
+app/RaummodeDSP/.build/
+app/RaummodeDSP/.swiftpm/
+*.xcuserstate
+.DS_Store

@@ -1,0 +1,13 @@
+# Equalizer APO - Raummode Linn Nexus (Sound Blaster Audigy Fx)
+# Ziel: C:\Program Files\EqualizerAPO\config\config.txt
+
+# Headroom, damit nichts clippt
+Preamp: -2 dB
+
+# Raummode bei ~42 Hz schmal absenken
+Filter 1: ON PK Fc 42 Hz Gain -6.0 dB Q 5.00
+
+# Zum Feintunen (Zeile oben auskommentieren, eine hier aktivieren):
+# Filter 1: ON PK Fc 40 Hz Gain -6.0 dB Q 5.00
+# Filter 1: ON PK Fc 44 Hz Gain -6.0 dB Q 5.00
+# Filter 1: ON PK Fc 42 Hz Gain -9.0 dB Q 6.00

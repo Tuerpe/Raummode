@@ -1,0 +1,4 @@
+# Zielkurve "flach": linear 20 Hz .. 20 kHz
+# Hz  dB
+20     0
+20000  0

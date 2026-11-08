@@ -1,0 +1,54 @@
+name: iOS-Build (unsigniert)
+
+# Manuell ausloesen (Actions -> iOS-Build -> Run workflow) oder per Tag v*.
+# macOS-Minuten zaehlen 10-fach, deshalb kein Build bei jedem Push.
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Xcode-Version
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.4.app || true
+          xcodebuild -version
+
+      - name: XcodeGen installieren
+        run: brew install xcodegen
+
+      - name: Projekt erzeugen
+        working-directory: app
+        run: xcodegen generate
+
+      - name: Bauen (ohne Signierung)
+        working-directory: app
+        run: |
+          xcodebuild \
+            -project Raummode.xcodeproj \
+            -scheme Raummode \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build | xcpretty && exit ${PIPESTATUS[0]}
+
+      - name: IPA packen
+        working-directory: app
+        run: |
+          rm -rf Payload && mkdir Payload
+          cp -R build/Build/Products/Release-iphoneos/Raummode.app Payload/
+          zip -qr Raummode-unsigned.ipa Payload
+          ls -la Raummode-unsigned.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Raummode-ipa
+          path: app/Raummode-unsigned.ipa
+          retention-days: 30

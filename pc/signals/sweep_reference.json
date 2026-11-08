@@ -1,0 +1,19 @@
+{
+  "sampleRate": 48000,
+  "sweep": {
+    "type": "exponential",
+    "f1": 20.0,
+    "f2": 20000.0,
+    "duration": 10.0,
+    "fadeIn": 0.05,
+    "fadeOut": 0.02,
+    "levelDbfs": -6.0,
+    "silenceBefore": 2.0,
+    "silenceAfter": 2.0
+  },
+  "pink": {
+    "duration": 60.0,
+    "rmsDbfs": -12.0,
+    "seed": 20261108
+  }
+}

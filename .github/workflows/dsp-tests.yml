@@ -1,0 +1,37 @@
+name: DSP-Tests
+
+on:
+  push:
+    paths:
+      - "pc/**"
+      - "app/RaummodeDSP/**"
+      - ".github/workflows/dsp-tests.yml"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  python:
+    name: Python-Referenz
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install numpy scipy pytest
+      - run: python pc/gen_signals.py
+      - run: python pc/tests/make_fixtures.py
+      - run: python -m pytest pc/tests -q
+
+  swift:
+    name: Swift-Paket (Ubuntu)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "5.10"
+      - run: swift --version
+      - name: Tests (Release, sonst dauern die FFTs zu lange)
+        working-directory: app/RaummodeDSP
+        run: swift test -c release -Xswiftc -enable-testing
