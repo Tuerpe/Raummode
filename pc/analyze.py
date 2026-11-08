@@ -159,7 +159,7 @@ def fit_one(resid: np.ndarray, w: np.ndarray, fc0: float) -> tuple[float, float,
         gb[1] = 0.0
     i0 = int(np.argmin(np.abs(GRID - fc0)))
     g0 = float(np.clip(-resid[i0], gb[0], gb[1]))
-    q0 = 4.0 if bass else 1.0
+    q0 = float(np.clip(estimate_q(resid, i0), qb[0], qb[1]))
     lf_lo, lf_hi = np.log2(fc0) - 1 / 3, np.log2(fc0) + 1 / 3
     lf_lo = max(lf_lo, np.log2(EQ_LO))
     lf_hi = min(lf_hi, np.log2(EQ_HI))
@@ -178,10 +178,68 @@ def fit_one(resid: np.ndarray, w: np.ndarray, fc0: float) -> tuple[float, float,
         fc, g, q = 2 ** x[0], x[1], x[2]
         return np.sum(w * (resid + filter_response(fc, g, q)) ** 2)
 
-    res = minimize(cost, x0=[np.log2(fc0), g0, q0], method="L-BFGS-B",
-                   bounds=[(lf_lo, lf_hi), tuple(gb), qb])
-    fc, g, q = 2 ** res.x[0], res.x[1], res.x[2]
+    # Mehrere Startwerte fuer Q: der Optimierer bleibt sonst gern in der Naehe des Starts haengen
+    best = None
+    for qs in {q0, max(qb[0], q0 / 2), min(qb[1], q0 * 2)}:
+        res = minimize(cost, x0=[np.log2(fc0), g0, qs], method="L-BFGS-B",
+                       bounds=[(lf_lo, lf_hi), tuple(gb), qb])
+        if best is None or res.fun < best.fun:
+            best = res
+    fc, g, q = 2 ** best.x[0], best.x[1], best.x[2]
     return float(fc), float(g), float(q)
+
+
+def estimate_q(resid: np.ndarray, i0: int) -> float:
+    """Q aus der Breite der Abweichung um i0: Bereich, in dem |resid| >= halbe Spitze bleibt."""
+    peak = abs(resid[i0])
+    if peak < 1e-6:
+        return 2.0
+    lo = i0
+    while lo > 0 and abs(resid[lo - 1]) >= peak / 2 and np.sign(resid[lo - 1]) == np.sign(resid[i0]):
+        lo -= 1
+    hi = i0
+    while hi < len(resid) - 1 and abs(resid[hi + 1]) >= peak / 2 and np.sign(resid[hi + 1]) == np.sign(resid[i0]):
+        hi += 1
+    bw = GRID[hi] - GRID[lo]
+    return GRID[i0] / bw if bw > 0 else 10.0
+
+
+def refine_jointly(filters: list[tuple[float, float, float]], resid0: np.ndarray, w: np.ndarray) -> list[tuple[float, float, float]]:
+    """Alle Filter gemeinsam nachoptimieren (Greedy laesst Reste zwischen benachbarten Filtern).
+    Grenzen je Filter wie beim Einzelfit; Ergebnis wird nur uebernommen, wenn es die
+    Summen-Anhebung einhaelt und besser ist."""
+    from scipy.optimize import minimize
+    if len(filters) < 2:
+        return filters
+    x0, bounds = [], []
+    for fc, g, q in filters:
+        bass = fc < BASS_LIMIT
+        qb = BASS_Q if bass else TREBLE_Q
+        gb = list(BASS_GAIN if bass else TREBLE_GAIN)
+        if fc < NO_BOOST_BELOW:
+            gb[1] = 0.0
+        lo = max(np.log2(fc) - 1 / 6, np.log2(EQ_LO), np.log2(BASS_LIMIT) if not bass else -np.inf)
+        hi = min(np.log2(fc) + 1 / 6, np.log2(EQ_HI), np.log2(BASS_LIMIT) if bass else np.inf)
+        if bass:
+            if fc >= NO_BOOST_BELOW:
+                lo = max(lo, np.log2(NO_BOOST_BELOW))
+            else:
+                hi = min(hi, np.log2(NO_BOOST_BELOW))
+        x0 += [np.log2(fc), g, q]
+        bounds += [(lo, hi), tuple(gb), qb]
+
+    def unpack(x):
+        return [(2 ** x[3 * k], x[3 * k + 1], x[3 * k + 2]) for k in range(len(filters))]
+
+    def cost(x):
+        return np.sum(w * (resid0 + eq_curve(unpack(x))) ** 2)
+
+    res = minimize(cost, x0=x0, method="L-BFGS-B", bounds=bounds, options={"maxiter": 200})
+    new = unpack(res.x)
+    cap = np.where(GRID < BASS_LIMIT, BASS_GAIN[1], TREBLE_GAIN[1])
+    if res.fun < cost(np.array(x0)) and np.all(eq_curve(new) <= cap + 0.05):
+        return [(float(fc), float(g), float(q)) for fc, g, q in new]
+    return filters
 
 
 def limit_total_boost(eq_so_far: np.ndarray, fc: float, g: float, q: float) -> float:
@@ -234,8 +292,21 @@ def auto_eq(meas: np.ndarray, target: np.ndarray, max_filters: int) -> tuple[lis
                     "resid_after_at_fc": float(new_resid[j]), "rms_before": before, "rms_after": after})
         filters.append((fc, g, q))
         resid = new_resid
-    filters_sorted = sorted(zip(filters, log), key=lambda t: t[0][0])
-    return [f for f, _ in filters_sorted], [l for _, l in filters_sorted]
+
+    # Gemeinsame Nachoptimierung; Filter mit |Gain| < MIN_GAIN_DB danach entfernen
+    resid0 = meas - target
+    refined = refine_jointly(filters, resid0, w)
+    final_resid = resid0 + eq_curve(refined)
+    out = []
+    for (fc, g, q), lg in zip(refined, log):
+        if abs(g) < MIN_GAIN_DB:
+            continue
+        j = int(np.argmin(np.abs(GRID - fc)))
+        lg = dict(lg, fc=fc, gain=g, q=q, resid_before_at_fc=float(resid0[j]),
+                  resid_after_at_fc=float(final_resid[j]))
+        out.append(((fc, g, q), lg))
+    out.sort(key=lambda t: t[0][0])
+    return [f for f, _ in out], [l for _, l in out]
 
 
 def preamp_db(eq: np.ndarray) -> float:
