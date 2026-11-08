@@ -57,10 +57,22 @@ def make_sweep(fs: int = SAMPLE_RATE) -> np.ndarray:
     return x * 10 ** (SWEEP_LEVEL_DBFS / 20)
 
 
-def make_sweep_file_signal(fs: int = SAMPLE_RATE) -> np.ndarray:
-    """Sweep mit 2 s Stille davor und danach, so wie die WAV abgespielt wird."""
+def make_sweep_file_signal(fs: int = SAMPLE_RATE, stop_hz: float | None = None) -> np.ndarray:
+    """Sweep mit 2 s Stille davor und danach, so wie die WAV abgespielt wird.
+
+    stop_hz: schonende Variante, die bei dieser Frequenz ausblendet (Hochtoener-Schutz).
+    Der Anfang ist identisch zum vollen Sweep, deshalb erkennt die App ihn genauso;
+    oberhalb stop_hz enthaelt die Messung dann aber nur Rauschen (analyze.py --max-freq).
+    """
     sil = np.zeros(int(round(SWEEP_SILENCE * fs)))
-    return np.concatenate([sil, make_sweep(fs), sil])
+    s = make_sweep(fs)
+    if stop_hz is not None:
+        t_stop = SWEEP_DURATION * np.log(stop_hz / SWEEP_F1) / np.log(SWEEP_F2 / SWEEP_F1)
+        n_stop = int(round(t_stop * fs))
+        n_out = int(round(SWEEP_FADE_OUT * fs))
+        s = s[:n_stop].copy()
+        s[n_stop - n_out:] *= 0.5 + 0.5 * np.cos(np.pi * np.arange(n_out) / n_out)
+    return np.concatenate([sil, s, sil])
 
 
 def make_pink_noise(fs: int = SAMPLE_RATE, duration: float = PINK_DURATION,
@@ -110,6 +122,7 @@ def main() -> None:
 
     sweep = make_sweep_file_signal()
     write_wav_24bit(OUT_DIR / "sweep_20-20k_10s.wav", sweep)
+    write_wav_24bit(OUT_DIR / "sweep_20-4k_schonend.wav", make_sweep_file_signal(stop_hz=4000.0))
 
     pink = make_pink_noise()
     write_wav_24bit(OUT_DIR / "pink_noise_60s.wav", pink)
@@ -127,7 +140,7 @@ def main() -> None:
     }
     (OUT_DIR / "sweep_reference.json").write_text(json.dumps(ref, indent=2), encoding="utf-8")
 
-    for name in ("sweep_20-20k_10s.wav", "pink_noise_60s.wav", "sweep_reference.json"):
+    for name in ("sweep_20-20k_10s.wav", "sweep_20-4k_schonend.wav", "pink_noise_60s.wav", "sweep_reference.json"):
         p = OUT_DIR / name
         print(f"{p.name:26s} {p.stat().st_size / 1e6:6.2f} MB")
     print(f"Sweep: Spitze {20*np.log10(np.max(np.abs(sweep))):.1f} dBFS, "

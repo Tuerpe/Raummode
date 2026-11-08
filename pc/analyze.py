@@ -405,6 +405,9 @@ def write_plot(path: Path, curves, positions, meas, target, eq, filters, target_
     ax1.semilogx(GRID, target, "g--", lw=1.4, label=f"Ziel: {target_name}")
     ax1.semilogx(GRID, meas + eq, "r", lw=1.8, label="Mittel mit EQ (simuliert)")
     ax1.axvspan(20, 50, color="orange", alpha=0.08)
+    if EQ_HI < 16000:
+        ax1.axvspan(EQ_HI, 20000, color="gray", alpha=0.15)
+        ax1.text(EQ_HI * 1.05, 17, "ungueltig\n(schonender Sweep)", fontsize=8, color="gray")
     ax1.set_ylabel("dB (rel. 300 Hz–3 kHz)")
     ax1.set_ylim(-20, 20)
     ax1.grid(True, which="both", alpha=0.3)
@@ -427,8 +430,16 @@ def write_plot(path: Path, curves, positions, meas, target, eq, filters, target_
 
 # ---- main ------------------------------------------------------------------
 def run(folder: Path, target: str = "raumkurve", max_filters: int = 10,
-        mic_cal: Path | None = None, out: Path | None = None) -> dict:
+        mic_cal: Path | None = None, out: Path | None = None, max_freq: float | None = None) -> dict:
+    global EQ_HI
+    if max_freq is not None:
+        # schonender Sweep (sweep_20-4k_schonend.wav): oberhalb liegt nur Rauschen -> nicht korrigieren
+        EQ_HI = min(16000.0, float(max_freq))
+    else:
+        EQ_HI = 16000.0
     positions, warns = load_positions(folder)
+    if max_freq is not None:
+        warns.append(f"Auswertung auf 20 Hz .. {EQ_HI:.0f} Hz begrenzt (--max-freq); Kurve oberhalb ist ungueltig")
     cal = load_two_column(mic_cal) if mic_cal else None
     meas, curves = prepare(positions, cal)
     tgt, tgt_name = load_target(target)
@@ -453,8 +464,10 @@ def main(argv=None) -> None:
     ap.add_argument("--max-filters", type=int, default=10)
     ap.add_argument("--mic-cal", type=Path, default=None, help="Mikrofon-Korrektur (Hz dB), wird abgezogen")
     ap.add_argument("--out", type=Path, default=None)
+    ap.add_argument("--max-freq", type=float, default=None,
+                    help="Obergrenze der gueltigen Messung in Hz, z. B. 4000 beim schonenden Sweep")
     a = ap.parse_args(argv)
-    r = run(a.folder, a.target, a.max_filters, a.mic_cal, a.out)
+    r = run(a.folder, a.target, a.max_filters, a.mic_cal, a.out, a.max_freq)
     print(f"Positionen: {len(r['positions'])}   Filter: {len(r['filters'])}   Preamp {r['preamp']:.1f} dB")
     for n, (fc, g, q) in enumerate(r["filters"], 1):
         print(f"  Filter {n}: ON PK Fc {fc:.1f} Hz Gain {g:+.1f} dB Q {q:.2f}")

@@ -53,7 +53,10 @@ python -m pytest pc/tests -q
 2. **Handy positionieren**: Hörplatz, Ohrhöhe, unteres Mikro Richtung Lautsprecher,
    auf Stativ/Kissen/Stuhllehne ablegen, nicht in der Hand.
 3. **Sweep messen**: App → Tab *Sweep* → Name eingeben (z. B. `Hoerplatz`) → *Aufnahme 15 s* →
-   sofort am PC `pc\signals\sweep_20-20k_10s.wav` starten (Doppelklick, Medienplayer).
+   sofort am PC `pc\signals\sweep_20-4k_schonend.wav` starten (Doppelklick, Medienplayer).
+   Der schonende Sweep endet bei 4 kHz und schont den Hochtöner (Dauertöne sind für Hochtöner
+   härter als Musik). Die App erkennt ihn genauso; bei der Analyse dann `--max-freq 4000` angeben.
+   Der volle Sweep `sweep_20-20k_10s.wav` nur bei moderater Lautstärke und intakten Hochtönern.
    Qualität prüfen: Korrelation > 0,2, SNR > 20 dB, Spitze < −1 dBFS. Sonst lauter/leiser und wiederholen.
    *Zur Session hinzufügen*.
 4. **3–5 Positionen**: Hörplatz, ±30 cm links/rechts, ±30 cm vor/zurück, evtl. 20 cm höher.
@@ -71,7 +74,7 @@ python -m pytest pc/tests -q
 ## Analyse und Einspielen
 
 ```bash
-python pc/analyze.py messungen/2026-11-15_vorher            # Zielkurve: raumkurve
+python pc/analyze.py messungen/2026-11-15_vorher --max-freq 4000   # schonender Sweep, Zielkurve raumkurve
 python pc/analyze.py messungen/2026-11-15_vorher --target harman --max-filters 8
 ```
 Ergebnis in `messungen/<ordner>/analyse/`: `plot.png` ansehen, `bericht.md` lesen, dann
