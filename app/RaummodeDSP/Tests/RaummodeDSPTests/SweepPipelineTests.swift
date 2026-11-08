@@ -88,10 +88,10 @@ final class SweepPipelineTests: XCTestCase {
     func testMeasurementJSONRoundTrip() throws {
         let rec = Self.synthetic(offset: 30000, seed: 5)
         let res = Self.analyzer.analyze(recording: rec)
-        var m = Measurement(device: "Test", ios: "0", session: "unit", positions: [Position(name: "P1", sweep: res)])
+        var m = RoomMeasurement(device: "Test", ios: "0", session: "unit", positions: [Position(name: "P1", sweep: res)])
         m.recomputeAverage()
         let data = try m.jsonData()
-        let back = try Measurement.from(json: data)
+        let back = try RoomMeasurement.from(json: data)
         XCTAssertEqual(back.schema, 1)
         XCTAssertEqual(back.session, "unit")
         XCTAssertEqual(back.positions.count, 1)

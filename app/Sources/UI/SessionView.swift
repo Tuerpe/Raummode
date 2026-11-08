@@ -89,9 +89,9 @@ struct SessionView: View {
     }
 
     private var chartCurves: [(name: String, freq: [Double], db: [Double])] {
-        var c = session.positions.map { ($0.name, $0.freq, $0.db) }
+        var c = session.positions.map { (name: $0.name, freq: $0.freq, db: $0.db) }
         if session.positions.count > 1, let avg = session.average {
-            c.append(("Mittel", session.positions[0].freq, avg))
+            c.append((name: "Mittel", freq: session.positions[0].freq, db: avg))
         }
         return c
     }

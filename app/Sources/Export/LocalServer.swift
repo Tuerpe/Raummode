@@ -10,7 +10,7 @@ final class LocalServer: ObservableObject {
     @Published var lastError: String?
 
     private var listener: NWListener?
-    private var directory: URL = FileManager.default.temporaryDirectory
+    nonisolated(unsafe) private var directory: URL = FileManager.default.temporaryDirectory
     private let port: UInt16 = 8080
 
     func start(directory: URL) {
@@ -63,7 +63,7 @@ final class LocalServer: ObservableObject {
     }
 
     private nonisolated func respond(path: String) -> Data {
-        let dir = MainActor.assumeIsolated { directory }
+        let dir = directory
         let fm = FileManager.default
         if path == "/" || path.isEmpty {
             let files = ((try? fm.contentsOfDirectory(atPath: dir.path)) ?? []).sorted()

@@ -1,7 +1,7 @@
 import Foundation
 
 /// JSON-Schema 1 der Mess-Exporte. Wird von pc/analyze.py gelesen.
-public struct Measurement: Codable, Equatable {
+public struct RoomMeasurement: Codable, Equatable {
     public var schema: Int = 1
     public var app: String = "Raummode"
     public var device: String
@@ -36,8 +36,8 @@ public struct Measurement: Codable, Equatable {
         return try enc.encode(self)
     }
 
-    public static func from(json: Data) throws -> Measurement {
-        try JSONDecoder().decode(Measurement.self, from: json)
+    public static func from(json: Data) throws -> RoomMeasurement {
+        try JSONDecoder().decode(RoomMeasurement.self, from: json)
     }
 }
 

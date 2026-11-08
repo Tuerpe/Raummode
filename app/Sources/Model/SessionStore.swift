@@ -12,7 +12,7 @@ final class SessionStore: ObservableObject {
     @Published var lastSavedURL: URL?
     @Published var message: String?
 
-    static let analyzer = SweepAnalyzer()   // einmalig, ~1 s
+    nonisolated(unsafe) static let analyzer = SweepAnalyzer()   // einmalig, ~1 s
 
     init() { refreshSaved() }
 
@@ -46,8 +46,8 @@ final class SessionStore: ObservableObject {
         sessionName = SessionStore.defaultName()
     }
 
-    func measurement() -> Measurement {
-        var m = Measurement(device: DeviceInfo.model, ios: UIDevice.current.systemVersion,
+    func measurement() -> RoomMeasurement {
+        var m = RoomMeasurement(device: DeviceInfo.model, ios: UIDevice.current.systemVersion,
                             session: sessionName, positions: positions)
         m.recomputeAverage()
         return m
@@ -103,7 +103,7 @@ final class SessionStore: ObservableObject {
 
     func load(_ url: URL) {
         do {
-            let m = try Measurement.from(json: Data(contentsOf: url))
+            let m = try RoomMeasurement.from(json: Data(contentsOf: url))
             sessionName = m.session
             positions = m.positions
             message = "Geladen: \(url.lastPathComponent)"

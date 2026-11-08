@@ -18,7 +18,7 @@ Kreuzvergleich: `pc/dsp_ref.py`, `pc/tests/`.
 | `ThirdOctave.levelsSingleBlock(_:)` | schnelle Variante fuer die Live-Anzeige |
 | `Smoothing.*` | `fractionalOctave`, `logGrid`, `interpolateLog`, `normalize`, `powerAverage` |
 | `Biquad.peaking` | EQ-APO-identischer PK-Filter (Simulation Vorher/Nachher) |
-| `Measurement` | JSON-Schema 1 (Codable) fuer den Export, `recomputeAverage()` |
+| `RoomMeasurement` | JSON-Schema 1 (Codable) fuer den Export, `recomputeAverage()` |
 | `WavFile.read / writeFloat32` | WAV-Fixtures lesen, Rohaufnahmen exportieren |
 
 ## Tests

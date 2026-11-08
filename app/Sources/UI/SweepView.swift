@@ -123,9 +123,9 @@ struct ResultChart: View {
             }
             RuleMark(y: .value("0 dB", 0)).foregroundStyle(.secondary).lineStyle(StrokeStyle(dash: [4]))
         }
-        .chartXScale(domain: 20...20000, type: .log)
+        .chartXScale(domain: 20.0...20000.0, type: .log)
         .chartXAxis {
-            AxisMarks(values: [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000]) { v in
+            AxisMarks(values: [20.0, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000]) { v in
                 AxisGridLine()
                 AxisValueLabel {
                     if let f = v.as(Double.self) {
